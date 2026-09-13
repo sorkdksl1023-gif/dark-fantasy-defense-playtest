@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dark Fantasy Defense - Stage 01 Frontline Pressure Graybox v1.1</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">Stage 01 Graybox v1.1</div>
+    <div class="status">
+      <b>Round <span id="roundNo">1</span>/10</b>
+      <b>Turn <span id="turnNo">1</span></b>
+      <span id="gateText">성문 100%</span>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tab1">1전장</button>
+      <button class="tab" id="tab2">2전장</button>
+    </div>
+  </div>
+
+  <div class="battle-area">
+    <div class="battle b1" id="battle">
+      <div class="hudrow">
+        <div><b id="battleTitle">1전장 · 성문 앞 지상 방어선</b></div>
+        <div id="pressureLabel" class="pill stable">안정</div>
+      </div>
+      <div class="battle-status-overlay">
+        <div class="os">1전장 <b id="ovB1">안정</b></div>
+        <div class="os">2전장 <b id="ovB2">압박</b></div>
+        <div class="os">방어선 <b id="ovLine">전선</b></div>
+        <div class="os">전선 늑대 <b id="ovFront">13</b></div>
+        <div class="os">접근 늑대 <b id="ovApproach">24</b></div>
+        <div class="os">강한 개체 <b id="ovStrong">없음</b></div>
+      </div>
+      <div class="scene" id="scene"></div>
+      <div class="legend">흰색 영웅 · 회청색 아군 · 붉은색 늑대</div>
+
+      <div class="resolution" id="resolution">
+        <div class="resolution-box">
+          <h2>Turn Resolution</h2>
+          <p id="resolutionText"></p>
+          <button class="next-btn" id="nextTurnBtn">다음 Turn</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-hud">
+    <div class="panel">
+      <h3>1전장 Command</h3>
+      <button class="hero-open-btn" id="b1Open">
+        <strong>1전장 · <span id="b1HeroText">영웅 선택</span></strong>
+        <span id="b1CmdText">○ 미선택</span>
+      </button>
+    </div>
+
+    <div class="panel">
+      <h3>2전장 Command</h3>
+      <button class="hero-open-btn" id="b2Open">
+        <strong>2전장 · <span id="b2HeroText">영웅 선택</span></strong>
+        <span id="b2CmdText">○ 미선택</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle">1전장 Command 선택</div>
+    <div class="sheet-grid">
+      <div class="sheet-section">
+        <h3>영웅</h3>
+        <div class="choice-list" id="heroChoices"></div>
+      </div>
+      <div class="sheet-section">
+        <h3>스킬 / Command</h3>
+        <div class="choice-list" id="skillChoices"></div>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="sheet-cancel" id="sheetCancel">취소</button>
+      <button class="sheet-confirm" id="sheetConfirm" disabled>선택 확정</button>
+    </div>
+  </div>
+</div>
+
+<div class="turn-confirm-backdrop" id="turnConfirmBackdrop">
+  <div class="turn-confirm-box" id="turnConfirmBox">
+    <h2>이번 Turn 진행</h2>
+    <div class="turn-summary">
+      <div class="turn-summary-card">
+        <strong>1전장</strong>
+        <div id="turnB1Hero">-</div>
+        <span id="turnB1Cmd">-</span>
+      </div>
+      <div class="turn-summary-card">
+        <strong>2전장</strong>
+        <div id="turnB2Hero">-</div>
+        <span id="turnB2Cmd">-</span>
+      </div>
+    </div>
+    <div class="turn-confirm-actions">
+      <button class="turn-back" id="turnBackBtn">수정하기</button>
+      <button class="turn-go" id="turnGoBtn">Turn 진행</button>
+    </div>
+  </div>
+</div>
+
+
+<script src="game.js"></script>
+
+</body>
+</html>
