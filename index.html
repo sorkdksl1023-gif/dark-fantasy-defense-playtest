@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dark Fantasy Defense - Stage 01 Frontline Pressure Graybox v1.1</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1f2630; --line:#30363d;
+  --text:#e6edf3; --muted:#9da7b3; --good:#6bdc8b; --warn:#e7b55b;
+  --bad:#ef6a6a; --accent:#8cb4ff; --hero:#e9edf2; --enemy:#b84c4c; --ally:#8191a6;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button{font:inherit}
+.app{
+  height:100vh;
+  height:100dvh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.topbar{
+  flex:0 0 auto; display:grid; grid-template-columns:auto 1fr auto; align-items:center;
+  gap:7px; padding:5px 8px; background:#0b0f14; border-bottom:1px solid var(--line)
+}
+.brand{font-weight:800;font-size:12px;white-space:nowrap}
+.status{text-align:center;font-size:11px;white-space:nowrap}
+.status b{margin:0 4px}
+.tabs{display:flex;justify-content:flex-end;gap:6px}
+.tab{
+  background:var(--panel);color:var(--text);border:1px solid var(--line);
+  padding:6px 10px;border-radius:9px;cursor:pointer
+}
+.tab.active{outline:2px solid var(--accent)}
+
+.battle-area{
+  flex:1 1 auto;
+  min-height:0;
+  padding:6px 8px 3px;
+  overflow:hidden;
+}
+.battle{
+  height:100%; min-height:0; border:1px solid var(--line); border-radius:14px; overflow:hidden;
+  position:relative;background:#202631;
+}
+.hudrow{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:7px 10px;background:rgba(9,12,16,.82);border-bottom:1px solid rgba(255,255,255,.08)
+}
+.scene{position:absolute;inset:38px 0 0 0;overflow:hidden}
+
+/* Battlefield 1 */
+.b1 .wall{
+  position:absolute;left:0;right:0;bottom:0;height:145px;background:#4e5661;border-top:8px solid #68717d
+}
+.b1 .gate{
+  position:absolute;width:170px;height:105px;left:50%;transform:translateX(-50%);
+  bottom:0;background:#2b2a27;border:6px solid #68635b;border-bottom:0;border-radius:90px 90px 0 0
+}
+.b1 .ground{
+  position:absolute;inset:0 0 137px 0;
+  background:
+    linear-gradient(#69727f 0 1px,transparent 1px),
+    linear-gradient(90deg,#69727f 0 1px,transparent 1px),
+    linear-gradient(#313844,#252b34);
+  background-size:48px 48px,48px 48px,auto
+}
+.b1 .frontline{
+  position:absolute;left:24%;right:18%;bottom:160px;height:4px;background:#8895a7
+}
+
+/* Battlefield 2 */
+.b2 .sky{position:absolute;inset:0;background:linear-gradient(#2f3a49 0 38%,#3a4248 38% 100%)}
+.b2 .field{
+  position:absolute;left:0;right:0;bottom:0;height:72%;
+  background:
+    linear-gradient(#565d64 0 1px,transparent 1px),
+    linear-gradient(90deg,#565d64 0 1px,transparent 1px),
+    linear-gradient(#343b41,#2d3338);
+  background-size:42px 42px,42px 42px,auto;
+  transform:perspective(700px) rotateX(52deg);transform-origin:bottom
+}
+.b2 .walltop{position:absolute;left:0;right:0;bottom:0;height:130px;background:#555d67;border-top:8px solid #737d89}
+.b2 .parapet{
+  position:absolute;left:0;right:0;bottom:120px;height:26px;
+  background:repeating-linear-gradient(90deg,#68727d 0 34px,#404852 34px 52px)
+}
+.enemy-swarm{position:absolute;inset:70px 5% 145px 5%}
+.enemy-swarm .e{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--enemy);opacity:.9}
+
+.unit{position:absolute;display:flex;flex-direction:column;align-items:center;gap:3px;user-select:none}
+.piece{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;border:2px solid rgba(255,255,255,.35)}
+.unit.hero .piece{background:var(--hero);color:#111}
+.unit.ally .piece{background:var(--ally);color:#0b0f14}
+.unit.enemy .piece{background:var(--enemy);color:#fff}
+.unit small{font-size:10px;background:rgba(0,0,0,.55);padding:1px 4px;border-radius:5px}
+.hero.selected .piece{outline:4px solid var(--accent)}
+
+.strong-enemy .piece{
+  width:38px;height:38px;border-width:3px;background:#7f1d1d !important;
+  box-shadow:0 0 0 3px rgba(239,106,106,.18)
+}
+.strong-enemy small{color:#ffd4d4}
+.line-marker{
+  position:absolute;left:10px;top:54%;z-index:8;
+  background:rgba(10,14,20,.72);border:1px solid rgba(255,255,255,.12);
+  padding:4px 7px;border-radius:8px;font-size:10px;color:#d7dee7
+}
+.flow-note{
+  position:absolute;right:10px;top:54%;z-index:8;
+  background:rgba(10,14,20,.62);border:1px solid rgba(255,255,255,.10);
+  padding:4px 7px;border-radius:8px;font-size:9px;color:#cbd5e1
+}
+
+
+.bottom-hud{
+  flex:0 0 78px;
+  background:#0b0f14;
+  border-top:1px solid var(--line);
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  align-items:stretch;
+  position:relative;
+  z-index:25;
+}
+.panel{
+  min-width:0;background:transparent;border:0;border-radius:10px;padding:0
+}
+.panel h3{display:none}
+.row{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.stat{
+  flex:1;min-width:74px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:8px;padding:5px 6px;font-size:11px
+}
+.stat b{display:block;font-size:10px;color:var(--muted);margin-bottom:2px}
+.pill{display:inline-block;padding:2px 6px;border-radius:999px;font-size:10px;font-weight:700}
+.stable{background:rgba(107,220,139,.15);color:var(--good)}
+.pressure{background:rgba(231,181,91,.16);color:var(--warn)}
+.danger{background:rgba(239,106,106,.16);color:var(--bad)}
+
+.hero-open-btn{
+  width:100%;height:100%;min-height:60px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--text);border-radius:10px;cursor:pointer;text-align:left;padding:7px 10px
+}
+.hero-open-btn strong{display:block}
+.hero-open-btn span{font-size:11px;color:var(--muted)}
+.hero-open-btn.active{outline:2px solid var(--accent)}
+
+.switch{
+  border:1px solid var(--line);background:transparent;color:var(--text);border-radius:8px;
+  padding:5px 7px;cursor:pointer;font-size:11px
+}
+
+
+.battle-status-overlay{
+  position:absolute;left:8px;right:8px;top:46px;z-index:12;
+  display:flex;gap:5px;pointer-events:none;
+}
+.battle-status-overlay .os{
+  background:rgba(10,14,20,.78);border:1px solid rgba(255,255,255,.10);
+  border-radius:999px;padding:4px 7px;font-size:10px;color:#d7dee7
+}
+
+.legend{
+  position:absolute;left:10px;bottom:8px;font-size:10px;color:var(--muted);
+  background:rgba(0,0,0,.45);padding:3px 6px;border-radius:6px
+}
+
+/* Bottom Sheet */
+.sheet-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.42);display:none;z-index:50
+}
+.sheet-backdrop.show{display:block}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;background:#10151c;border-top:1px solid var(--line);
+  border-radius:18px 18px 0 0;padding:10px 12px 14px;
+  transform:translateY(100%);transition:transform .18s ease;
+  box-shadow:0 -12px 30px rgba(0,0,0,.35)
+}
+.sheet-backdrop.show .sheet{transform:translateY(0)}
+.sheet-handle{width:46px;height:4px;border-radius:999px;background:#4b5563;margin:0 auto 9px}
+.sheet-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:10px}
+.sheet-section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px}
+.sheet-section h3{margin:0 0 7px;font-size:13px}
+.choice-list{display:grid;gap:6px}
+.choice{
+  border:1px solid var(--line);background:var(--panel2);color:var(--text);
+  border-radius:9px;padding:8px;text-align:left;cursor:pointer
+}
+.choice.active{outline:2px solid var(--accent)}
+.choice:disabled{opacity:.42;cursor:not-allowed;filter:grayscale(1)}
+.choice:disabled b,.choice:disabled small{color:#7d8793}
+.choice small{color:var(--muted)}
+.sheet-title{font-weight:800;margin-bottom:8px}
+
+
+.sheet-actions{
+  display:flex;gap:8px;margin-top:10px
+}
+.sheet-cancel,.sheet-confirm{
+  flex:1;padding:9px;border-radius:9px;font-weight:800;cursor:pointer
+}
+.sheet-cancel{
+  background:transparent;color:var(--text);border:1px solid var(--line)
+}
+.sheet-confirm{
+  background:#315a9e;color:#fff;border:0
+}
+.sheet-confirm:disabled{opacity:.35;cursor:not-allowed}
+
+
+.turn-confirm-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.58);display:none;place-items:center;z-index:70;
+  padding:16px
+}
+.turn-confirm-backdrop.show{display:grid}
+.turn-confirm-box{
+  width:min(520px,92vw);max-height:calc(100dvh - 32px);overflow:auto;
+  background:#10151c;border:1px solid var(--line);border-radius:16px;
+  padding:16px;box-shadow:0 16px 40px rgba(0,0,0,.45)
+}
+.turn-confirm-box h2{margin:0 0 12px;font-size:18px}
+.turn-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.turn-summary-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px
+}
+.turn-summary-card strong{display:block;margin-bottom:5px}
+.turn-summary-card span{font-size:12px;color:var(--muted)}
+.turn-confirm-actions{display:flex;gap:8px;margin-top:12px}
+.turn-back,.turn-go{
+  flex:1;padding:10px;border-radius:10px;font-weight:800;cursor:pointer
+}
+.turn-back{background:transparent;color:var(--text);border:1px solid var(--line)}
+.turn-go{background:#315a9e;color:#fff;border:0}
+
+.resolution{
+  position:absolute;inset:0;background:rgba(5,8,12,.80);display:none;place-items:center;z-index:30
+}
+.resolution.show{display:grid}
+.resolution-box{
+  width:min(520px,88%);background:#10151c;border:1px solid var(--line);
+  border-radius:16px;padding:18px;text-align:center
+}
+.resolution-box h2{margin-top:0}
+.resolution-box p{color:#c9d1d9}
+.next-btn{
+  width:100%;padding:9px;border-radius:10px;border:0;background:#315a9e;color:white;font-weight:800;cursor:pointer
+}
+
+
+@media(max-width:700px){
+  .app{height:100dvh}
+  .topbar{grid-template-columns:auto 1fr auto;gap:4px;padding:3px 6px}
+  .brand{font-size:9px;line-height:1.05;max-width:58px}
+  .status{font-size:9px}
+  .tabs{gap:4px}
+  .tab{padding:5px 7px;font-size:11px}
+  .battle-area{padding:5px 6px 3px}
+  .hudrow{padding:6px 8px}
+  .hudrow b{font-size:12px}
+  .bottom-hud{
+    flex-basis:78px;
+    padding:5px 6px calc(5px + env(safe-area-inset-bottom));
+  }
+  .hero-open-btn{min-height:56px;padding:6px 8px}
+  .hero-open-btn strong{font-size:12px}
+  .hero-open-btn span{font-size:10px}
+  .battle-status-overlay{top:42px;gap:4px;overflow:hidden;flex-wrap:wrap;align-content:flex-start}
+  .battle-status-overlay .os{font-size:9px;padding:3px 6px;white-space:nowrap}
+  .legend{font-size:9px}
+  .sheet-grid{grid-template-columns:1fr 1.25fr;gap:7px}
+  .sheet-section{padding:7px}
+  .choice{padding:7px}
+}
+
+@media(max-height:720px){
+  .topbar{padding:4px 8px}
+  .battle-area{padding:5px 6px 3px}
+  .bottom-hud{padding:5px 6px;gap:5px}
+  .panel{padding:5px}
+  .panel h3{font-size:11px}
+  .stat{padding:4px;font-size:10px}
+  .hero-open-btn{padding:6px;min-height:46px}
+  .sheet{padding-bottom:9px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">Stage 01 Graybox v1.1</div>
+    <div class="status">
+      <b>Round <span id="roundNo">1</span>/10</b>
+      <b>Turn <span id="turnNo">1</span></b>
+      <span id="gateText">성문 100%</span>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tab1">1전장</button>
+      <button class="tab" id="tab2">2전장</button>
+    </div>
+  </div>
+
+  <div class="battle-area">
+    <div class="battle b1" id="battle">
+      <div class="hudrow">
+        <div><b id="battleTitle">1전장 · 성문 앞 지상 방어선</b></div>
+        <div id="pressureLabel" class="pill stable">안정</div>
+      </div>
+      <div class="battle-status-overlay">
+        <div class="os">1전장 <b id="ovB1">안정</b></div>
+        <div class="os">2전장 <b id="ovB2">압박</b></div>
+        <div class="os">방어선 <b id="ovLine">전선</b></div>
+        <div class="os">전선 늑대 <b id="ovFront">13</b></div>
+        <div class="os">접근 늑대 <b id="ovApproach">24</b></div>
+        <div class="os">강한 개체 <b id="ovStrong">없음</b></div>
+      </div>
+      <div class="scene" id="scene"></div>
+      <div class="legend">흰색 영웅 · 회청색 아군 · 붉은색 늑대</div>
+
+      <div class="resolution" id="resolution">
+        <div class="resolution-box">
+          <h2>Turn Resolution</h2>
+          <p id="resolutionText"></p>
+          <button class="next-btn" id="nextTurnBtn">다음 Turn</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-hud">
+    <div class="panel">
+      <h3>1전장 Command</h3>
+      <button class="hero-open-btn" id="b1Open">
+        <strong>1전장 · <span id="b1HeroText">영웅 선택</span></strong>
+        <span id="b1CmdText">○ 미선택</span>
+      </button>
+    </div>
+
+    <div class="panel">
+      <h3>2전장 Command</h3>
+      <button class="hero-open-btn" id="b2Open">
+        <strong>2전장 · <span id="b2HeroText">영웅 선택</span></strong>
+        <span id="b2CmdText">○ 미선택</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle">1전장 Command 선택</div>
+    <div class="sheet-grid">
+      <div class="sheet-section">
+        <h3>영웅</h3>
+        <div class="choice-list" id="heroChoices"></div>
+      </div>
+      <div class="sheet-section">
+        <h3>스킬 / Command</h3>
+        <div class="choice-list" id="skillChoices"></div>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="sheet-cancel" id="sheetCancel">취소</button>
+      <button class="sheet-confirm" id="sheetConfirm" disabled>선택 확정</button>
+    </div>
+  </div>
+</div>
+
+<div class="turn-confirm-backdrop" id="turnConfirmBackdrop">
+  <div class="turn-confirm-box" id="turnConfirmBox">
+    <h2>이번 Turn 진행</h2>
+    <div class="turn-summary">
+      <div class="turn-summary-card">
+        <strong>1전장</strong>
+        <div id="turnB1Hero">-</div>
+        <span id="turnB1Cmd">-</span>
+      </div>
+      <div class="turn-summary-card">
+        <strong>2전장</strong>
+        <div id="turnB2Hero">-</div>
+        <span id="turnB2Cmd">-</span>
+      </div>
+    </div>
+    <div class="turn-confirm-actions">
+      <button class="turn-back" id="turnBackBtn">수정하기</button>
+      <button class="turn-go" id="turnGoBtn">Turn 진행</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+const state = {
+  battlefield:1,
+  turn:1,
+  round:1,
+  gate:100,
+  ally:120,
+
+  // P0 enemy state split
+  approachWolves:24,
+  frontWolves:13,
+  strongApproach:0,
+  strongFront:0,
+
+  // 0=접근, 1=전선, 2=성문 앞, 3=성문 압박
+  lineStage:1,
+
+  selectedHero:{1:null,2:null},
+  selectedCommand:{1:null,2:null},
+
+  // v1.1 A/B Test: commands used on the previous Turn are unavailable this Turn.
+  // The hero itself remains selectable, and cooldown persists across Round changes.
+  cooldownCommands:new Set(),
+
+  sheetBattlefield:null,
+  draftHero:null,
+  draftCommand:null,
+
+  lastResolution:null
+};
+
+const heroes = {
+  1:[
+    {id:'A',name:'A · 검기사',role:'단일 공격'},
+    {id:'B',name:'B · 대검전사',role:'다수 공격'},
+    {id:'C',name:'C · 성기사',role:'전선 방어'}
+  ],
+  2:[
+    {id:'D',name:'D · 궁수',role:'원거리 단일'},
+    {id:'E',name:'E · 마도사',role:'광역 마법'}
+  ]
+};
+
+const commands = {
+  A:[['강습','강한 단일 피해'],['결투','강한 개체 우선 제거'],['돌파','전열을 밀어 전진 가능성 증가']],
+  B:[['휩쓸기','전선 일반 늑대 다수 제거'],['충격파','전선 적 압박 크게 감소'],['분쇄','전선 다수 약화 및 제거']],
+  C:[['방벽','이번 Turn 전선 유지력 증가'],['수호','성문 앞/성문 압박 방어 강화'],['밀어내기','적 압박을 줄이고 전선 회복 보조']],
+  D:[['저격','접근 중 강한 개체 우선 제거'],['집중사격','접근 적 소수 정밀 제거'],['엄호','접근 적 일부 제거 + 1전장 유지력 보조']],
+  E:[['화염폭발','접근 일반 늑대 광역 제거'],['빙결장','접근 적 합류량 감소'],['마력장','1전장 유지력 보조']]
+};
+
+const lineNames = ['접근','전선','성문 앞','성문 압박'];
+const $ = id => document.getElementById(id);
+
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+function totalEnemyPressure(){
+  return state.frontWolves + state.strongFront*4;
+}
+
+function pressureState(){
+  const p = totalEnemyPressure();
+  const base = 15 + Math.floor(state.ally/14);
+  const delta = base - p;
+  if(delta >= 8) return ['안정','stable'];
+  if(delta >= -5) return ['압박','pressure'];
+  return ['위험','danger'];
+}
+
+function approachState(){
+  const p = state.approachWolves + state.strongApproach*5;
+  if(p <= 12) return ['안정','stable'];
+  if(p <= 28) return ['압박','pressure'];
+  return ['위험','danger'];
+}
+
+function commandName(bf){
+  const key=state.selectedCommand[bf];
+  if(!key) return null;
+  const [hid,idx]=key.split('-');
+  return commands[hid][Number(idx)][0];
+}
+
+function heroName(bf){
+  const id=state.selectedHero[bf];
+  if(!id) return null;
+  return heroes[bf].find(h=>h.id===id)?.name || id;
+}
+
+function battlefieldY(){
+  // Higher stage means closer to gate, visually lower on the screen.
+  return [42,52,66,78][state.lineStage];
+}
+
+function renderScene(){
+  const s=$('scene'); s.innerHTML='';
+  $('battle').className='battle '+(state.battlefield===1?'b1':'b2');
+  $('battleTitle').textContent=state.battlefield===1
+    ? '1전장 · 현재 전선 방어'
+    : '2전장 · 접근 중 적 차단';
+
+  const [label,cls] = state.battlefield===1 ? pressureState() : approachState();
+  $('pressureLabel').textContent=label;
+  $('pressureLabel').className='pill '+cls;
+
+  if(state.battlefield===1){
+    s.insertAdjacentHTML('beforeend',
+      '<div class="ground"></div><div class="frontline" id="frontlineVisual"></div><div class="wall"></div><div class="gate"></div>'
+    );
+
+    const y=battlefieldY();
+    const frontline=$('frontlineVisual');
+    if(frontline) frontline.style.bottom = (100 - y) + '%';
+
+    s.insertAdjacentHTML('beforeend',
+      `<div class="line-marker">현재 방어선: <b>${lineNames[state.lineStage]}</b></div>
+       <div class="flow-note">전선 적 ${state.frontWolves} · 강한 개체 ${state.strongFront}</div>`
+    );
+
+    // Heroes shift with the frontline.
+    const hpos=[[38,y+7],[50,y+2],[62,y+7]];
+    heroes[1].forEach((h,i)=>addUnit(s,'hero',h.id,hpos[i][0],hpos[i][1],state.selectedHero[1]===h.id));
+
+    const allyVisible=Math.min(10,Math.max(4,Math.round(state.ally/15)));
+    for(let i=0;i<allyVisible;i++){
+      addUnit(s,'ally','',27+(i%5)*11,y+15+Math.floor(i/5)*7,false);
+    }
+
+    const frontVisible=Math.min(18,Math.max(0,state.frontWolves));
+    for(let i=0;i<frontVisible;i++){
+      addUnit(s,'enemy','늑대',15+(i%9)*8.6,y-18-Math.floor(i/9)*10+(i%2)*2,false);
+    }
+
+    for(let i=0;i<state.strongFront;i++){
+      addUnit(s,'enemy','강한 늑대',26+i*16,y-28,false,true);
+    }
+
+  }else{
+    s.insertAdjacentHTML('beforeend',
+      '<div class="sky"></div><div class="field"></div><div class="enemy-swarm" id="swarm"></div><div class="parapet"></div><div class="walltop"></div>'
+    );
+    addUnit(s,'hero','D',42,76,state.selectedHero[2]==='D');
+    addUnit(s,'hero','E',58,76,state.selectedHero[2]==='E');
+
+    s.insertAdjacentHTML('beforeend',
+      `<div class="line-marker">접근 중 늑대: <b>${state.approachWolves}</b></div>
+       <div class="flow-note">강한 접근 개체 ${state.strongApproach} · 남은 적 일부가 이번 Turn 전선 합류</div>`
+    );
+
+    const sw=$('swarm');
+    const visible=Math.min(60,Math.max(0,state.approachWolves));
+    for(let i=0;i<visible;i++){
+      const e=document.createElement('div');e.className='e';
+      e.style.left=(3+(i*17)%94)+'%';
+      e.style.top=(3+(i*29)%80)+'%';
+      e.style.transform=`scale(${0.55+((i*13)%45)/100})`;
+      sw.appendChild(e);
+    }
+    for(let i=0;i<state.strongApproach;i++){
+      addUnit(s,'enemy','강한',18+i*22,35+i*8,false,true);
+    }
+  }
+}
+
+function addUnit(parent,type,label,x,y,selected,strong=false){
+  const d=document.createElement('div');
+  d.className=`unit ${type}`+(selected?' selected':'')+(strong?' strong-enemy':'');
+  d.style.left=x+'%';
+  d.style.top=y+'%';
+  d.style.transform='translate(-50%,-50%)';
+  const shown=type==='ally'?'병':(type==='enemy'?(strong?'강':'늑'):label);
+  d.innerHTML=`<div class="piece">${shown}</div>${label?`<small>${label}</small>`:''}`;
+  parent.appendChild(d);
+}
+
+function renderHUD(){
+  $('roundNo').textContent=state.round;
+  $('turnNo').textContent=state.turn;
+  $('gateText').textContent=`성문 ${state.gate}%`;
+
+  $('ovB1').textContent=pressureState()[0];
+  $('ovB2').textContent=approachState()[0];
+  $('ovLine').textContent=lineNames[state.lineStage];
+  $('ovFront').textContent=state.frontWolves;
+  $('ovApproach').textContent=state.approachWolves;
+  $('ovStrong').textContent=(state.strongFront+state.strongApproach)>0
+    ? `전선 ${state.strongFront} / 접근 ${state.strongApproach}`
+    : '없음';
+
+  for(const bf of [1,2]){
+    $(`b${bf}HeroText`).textContent=heroName(bf)||'영웅 선택';
+    $(`b${bf}CmdText`).textContent=commandName(bf)?`✓ ${commandName(bf)}`:'○ 미선택';
+    $(`b${bf}Open`).classList.toggle('active',!!state.selectedCommand[bf]);
+  }
+  $('tab1').classList.toggle('active',state.battlefield===1);
+  $('tab2').classList.toggle('active',state.battlefield===2);
+}
+
+function render(){renderScene();renderHUD();}
+
+function switchBattlefield(n){
+  state.battlefield=n;
+  render();
+}
+$('tab1').onclick=()=>switchBattlefield(1);
+$('tab2').onclick=()=>switchBattlefield(2);
+
+function openSheet(bf){
+  state.sheetBattlefield=bf;
+  state.draftHero=state.selectedHero[bf];
+  state.draftCommand=state.selectedCommand[bf];
+  $('sheetTitle').textContent=`${bf}전장 · 영웅 / 스킬 선택`;
+  renderSheet();
+  $('sheetBackdrop').classList.add('show');
+}
+function closeSheet(){
+  $('sheetBackdrop').classList.remove('show');
+  state.sheetBattlefield=null;
+  state.draftHero=null;
+  state.draftCommand=null;
+}
+$('b1Open').onclick=()=>openSheet(1);
+$('b2Open').onclick=()=>openSheet(2);
+
+$('sheetBackdrop').addEventListener('click',(e)=>{
+  if(e.target===$('sheetBackdrop')) closeSheet();
+});
+$('sheet').addEventListener('click',(e)=>e.stopPropagation());
+
+function renderSheet(){
+  const bf=state.sheetBattlefield;
+  const heroBox=$('heroChoices');
+  const skillBox=$('skillChoices');
+  heroBox.innerHTML=''; skillBox.innerHTML='';
+
+  heroes[bf].forEach(h=>{
+    const b=document.createElement('button');
+    b.className='choice'+(state.draftHero===h.id?' active':'');
+    b.innerHTML=`<b>${h.name}</b><br><small>${h.role}</small>`;
+    b.onclick=()=>{
+      if(state.draftHero!==h.id){
+        state.draftHero=h.id;
+        state.draftCommand=null;
+      }
+      renderSheet();
+    };
+    heroBox.appendChild(b);
+  });
+
+  const hid=state.draftHero;
+  if(!hid){
+    skillBox.innerHTML='<div style="color:var(--muted);font-size:12px">먼저 영웅을 선택하세요.</div>';
+    $('sheetConfirm').disabled=true;
+    return;
+  }
+
+  commands[hid].forEach((c,idx)=>{
+    const key=`${hid}-${idx}`;
+    const onCooldown=state.cooldownCommands.has(key);
+    const b=document.createElement('button');
+    b.className='choice'+(state.draftCommand===key&&!onCooldown?' active':'');
+    b.disabled=onCooldown;
+    b.innerHTML=onCooldown
+      ? `<b>${c[0]}</b><br><small>${c[1]} · 재사용 대기 1T</small>`
+      : `<b>${c[0]}</b><br><small>${c[1]}</small>`;
+    b.onclick=()=>{
+      if(onCooldown) return;
+      state.draftCommand=key;
+      renderSheet();
+    };
+    skillBox.appendChild(b);
+  });
+
+  $('sheetConfirm').disabled=!state.draftCommand || state.cooldownCommands.has(state.draftCommand);
+}
+
+$('sheetCancel').onclick=()=>closeSheet();
+
+function openTurnConfirm(){
+  if(!(state.selectedCommand[1] && state.selectedCommand[2])) return;
+  $('turnB1Hero').textContent=heroName(1)||'-';
+  $('turnB1Cmd').textContent=commandName(1)||'-';
+  $('turnB2Hero').textContent=heroName(2)||'-';
+  $('turnB2Cmd').textContent=commandName(2)||'-';
+  $('turnConfirmBackdrop').classList.add('show');
+}
+function closeTurnConfirm(){
+  $('turnConfirmBackdrop').classList.remove('show');
+}
+
+$('sheetConfirm').onclick=()=>{
+  const bf=state.sheetBattlefield;
+  if(!bf || !state.draftHero || !state.draftCommand) return;
+  if(state.cooldownCommands.has(state.draftCommand)) return;
+  state.selectedHero[bf]=state.draftHero;
+  state.selectedCommand[bf]=state.draftCommand;
+  closeSheet();
+  render();
+  if(state.selectedCommand[1] && state.selectedCommand[2]) openTurnConfirm();
+};
+
+$('turnBackBtn').onclick=()=>closeTurnConfirm();
+$('turnConfirmBackdrop').addEventListener('click',(e)=>{
+  if(e.target===$('turnConfirmBackdrop')) closeTurnConfirm();
+});
+$('turnConfirmBox').addEventListener('click',(e)=>e.stopPropagation());
+
+function applyBattle2Command(key){
+  let killedApproach=0, killedStrong=0, support=0, joinRateMod=0;
+  const [hid,idxStr]=key.split('-');
+  const idx=Number(idxStr);
+
+  // Deterministic Graybox values: intentionally low randomness.
+  if(hid==='D'){
+    if(state.strongApproach>0 && (idx===0 || idx===1)){
+      killedStrong=1;
+      state.strongApproach-=1;
+      killedApproach = idx===1 ? 3 : 2;
+    }else{
+      killedApproach = idx===1 ? 6 : (idx===2 ? 4 : 4);
+    }
+    if(idx===2) support+=6;
+  }
+
+  if(hid==='E'){
+    if(idx===0){
+      killedApproach = Math.min(10, 5 + Math.floor(state.approachWolves*0.22));
+    }else if(idx===1){
+      killedApproach = Math.min(7, 3 + Math.floor(state.approachWolves*0.12));
+      joinRateMod -= 0.14;
+    }else if(idx===2){
+      killedApproach = 3;
+      support += 6;
+    }
+  }
+
+  killedApproach = Math.min(state.approachWolves, killedApproach);
+  state.approachWolves -= killedApproach;
+  return {killedApproach,killedStrong,support,joinRateMod};
+}
+
+function processJoin(joinRateMod){
+  const baseRate = clamp(0.34 + state.round*0.01 + joinRateMod, 0.15, 0.50);
+  let joined = Math.min(state.approachWolves, Math.max(1, Math.floor(state.approachWolves*baseRate)));
+  let strongJoined=0;
+
+  if(state.strongApproach>0 && state.approachWolves<=16){
+    strongJoined=1;
+  } else if(state.strongApproach>0 && state.turn%2===0){
+    strongJoined=1;
+  }
+
+  state.approachWolves -= joined;
+  state.frontWolves += joined;
+
+  if(strongJoined){
+    state.strongApproach-=1;
+    state.strongFront+=1;
+  }
+
+  return {joined,strongJoined};
+}
+
+function applyBasicActions(){
+  // All heroes + troops keep fighting without Command.
+  const basicKill = Math.max(2, Math.floor(state.ally/38));
+  const strongChip = state.strongFront>0 && state.turn%3===0 ? 1 : 0;
+
+  state.frontWolves = Math.max(0,state.frontWolves-basicKill);
+  if(strongChip) state.strongFront = Math.max(0,state.strongFront-1);
+
+  return {basicKill,strongChip};
+}
+
+function applyBattle1Command(key){
+  let killedFront=0, killedStrong=0, defense=0, push=0;
+  const [hid,idxStr]=key.split('-');
+  const idx=Number(idxStr);
+
+  if(hid==='A'){
+    if(state.strongFront>0){
+      if(idx===1 || idx===0){
+        killedStrong=1;
+        state.strongFront-=1;
+        killedFront = idx===0 ? 2 : 1;
+      }else{
+        killedFront=4;
+        push=5;
+      }
+    }else{
+      killedFront = idx===2 ? 5 : 4;
+      if(idx===2) push=5;
+    }
+  }
+
+  if(hid==='B'){
+    if(idx===0){
+      killedFront = Math.min(8, 3 + Math.floor(state.frontWolves*0.18));
+    }else if(idx===1){
+      killedFront = Math.min(7, 3 + Math.floor(state.frontWolves*0.12));
+      defense += 4;
+    }else{
+      killedFront = Math.min(10, 2 + Math.floor(state.frontWolves*0.22));
+      push += 2;
+    }
+  }
+
+  if(hid==='C'){
+    if(idx===0){
+      killedFront=2; defense+=11;
+    }else if(idx===1){
+      killedFront=1; defense+=14;
+    }else{
+      killedFront=3; defense+=8; push+=6;
+    }
+  }
+
+  killedFront=Math.min(state.frontWolves,killedFront);
+  state.frontWolves-=killedFront;
+  return {killedFront,killedStrong,defense,push};
+}
+
+function resolvePressure(defenseBonus,pushBonus,supportBonus){
+  const enemyPressure = state.frontWolves + state.strongFront*4;
+  const baseHold = 10 + Math.floor(state.ally/15);
+  const hold = baseHold + defenseBonus + supportBonus + pushBonus;
+
+  const delta = hold - enemyPressure;
+  let result='유지';
+
+  if(delta >= 12){
+    if(state.lineStage>0){
+      state.lineStage-=1;
+      result='전진';
+    }else{
+      result='접근선 유지';
+    }
+  }else if(delta <= -2){
+    if(state.lineStage<3){
+      state.lineStage+=1;
+      result = state.lineStage===2 ? '성문 앞까지 후퇴' : (state.lineStage===3 ? '성문 압박' : '후퇴');
+    }else{
+      result='성문 압박 지속';
+    }
+  }else{
+    result='유지';
+  }
+
+  return {enemyPressure,hold,delta,result};
+}
+
+function calculateLosses(pressureResult, defenseBonus){
+  const danger = Math.max(0, pressureResult.enemyPressure - pressureResult.hold);
+  let allyLoss = 2 + Math.floor(state.frontWolves/8) + state.strongFront;
+  allyLoss = Math.max(1, allyLoss - Math.floor(defenseBonus/6));
+  allyLoss += Math.floor(danger/8);
+  allyLoss = clamp(allyLoss,1,12);
+
+  state.ally=Math.max(0,state.ally-allyLoss);
+
+  let gateDamage=0;
+  if(state.lineStage===3 && pressureResult.delta<=-10){
+    gateDamage = clamp(4 + Math.floor((-pressureResult.delta)/5),4,14);
+    state.gate=Math.max(0,state.gate-gateDamage);
+  }
+
+  return {allyLoss,gateDamage};
+}
+
+function seedNextTurn(){
+  // 일반 Turn은 물량 중심으로 변화시키고,
+  // 강한 개체는 Round 5 / Round 10에서만 등장한다.
+  const cycle=(state.turn + state.round*2)%5;
+
+  let reinforcements=0;
+
+  if(cycle===0){ reinforcements=18; } // 접근 적 많음
+  if(cycle===1){ reinforcements=8;  } // 접근 적 적음
+  if(cycle===2){ reinforcements=14; } // 중간 물량
+  if(cycle===3){ reinforcements=45; } // 위기 누적
+  if(cycle===4){ reinforcements=7;  } // 소수 물량
+
+  state.approachWolves = clamp(state.approachWolves + reinforcements, 0, 55);
+
+  // 강한 개체는 Round 5와 Round 10 전용.
+  // 해당 라운드에 진입했을 때만 접근 중 강한 개체를 추가한다.
+  if((state.round===5 || state.round===10) && state.turn===1){
+    state.strongApproach = Math.max(state.strongApproach, 1);
+  }else if(state.round!==5 && state.round!==10){
+    state.strongApproach = 0;
+    state.strongFront = 0;
+  }
+
+  // If front is empty, a small advance pack keeps decisions alive next turn.
+  if(state.frontWolves===0 && state.approachWolves>0){
+    const v=Math.min(4,state.approachWolves);
+    state.approachWolves-=v;
+    state.frontWolves+=v;
+  }
+}
+
+$('turnGoBtn').onclick=()=>{
+  closeTurnConfirm();
+
+  const c1=state.selectedCommand[1];
+  const c2=state.selectedCommand[2];
+
+  // Cooldown safety: an unavailable Command must never reach Resolution.
+  if(state.cooldownCommands.has(c1) || state.cooldownCommands.has(c2)){
+    alert('재사용 대기 중인 Command가 선택되어 있습니다. Command를 다시 선택해 주세요.');
+    return;
+  }
+
+  // 1) Turn start state fixed by current state
+  const start={
+    approach:state.approachWolves,
+    front:state.frontWolves,
+    strongA:state.strongApproach,
+    strongF:state.strongFront,
+    line:state.lineStage,
+    ally:state.ally,
+    gate:state.gate
+  };
+
+  // 2) Commands are already confirmed
+
+  // 3) Battlefield 2 effect
+  const b2=applyBattle2Command(c2);
+
+  // 4) Some remaining approach enemies join front
+  const join=processJoin(b2.joinRateMod);
+
+  // 5) Basic action
+  const basic=applyBasicActions();
+
+  // 6) Battlefield 1 Command
+  const b1=applyBattle1Command(c1);
+
+  // 7) Pressure calculation
+  const pressure=resolvePressure(b1.defense,b1.push,b2.support);
+
+  // 8) Ally losses
+  const losses=calculateLosses(pressure,b1.defense+b2.support);
+
+  // 9-10) line result + gate damage already applied
+  // 11) state reflected on next render
+  state.lastResolution={start,b1,b2,join,basic,pressure,losses};
+
+  // The Commands used this Turn become the only Commands locked on the next Turn.
+  // Replacing (not stacking) the set makes Turn N Commands available again on Turn N+2.
+  state.cooldownCommands=new Set([c1,c2]);
+
+  const strongText = (state.strongFront+state.strongApproach)>0
+    ? `강한 개체: 전선 ${state.strongFront} / 접근 ${state.strongApproach}`
+    : '강한 개체 없음';
+
+  $('resolutionText').innerHTML=
+    `2전장: 접근 늑대 ${b2.killedApproach} 제거${b2.killedStrong?` · 강한 개체 ${b2.killedStrong} 제거`:''}<br>
+     전선 합류: 일반 ${join.joined}${join.strongJoined?` · 강한 개체 ${join.strongJoined}`:''}<br>
+     기본 행동: 전선 늑대 ${basic.basicKill} 제거<br>
+     1전장: 전선 늑대 ${b1.killedFront} 제거${b1.killedStrong?` · 강한 개체 ${b1.killedStrong} 제거`:''}<br><br>
+     <b>전선 결과: ${pressure.result}</b><br>
+     현재 방어선: ${lineNames[state.lineStage]}<br>
+     전선 늑대 ${state.frontWolves} · 접근 늑대 ${state.approachWolves}<br>
+     ${strongText}<br>
+     아군 손실 ${losses.allyLoss}${losses.gateDamage?` · 성문 피해 ${losses.gateDamage}`:''}<br>
+     성문 ${state.gate}%`;
+
+  $('resolution').classList.add('show');
+  render();
+};
+
+$('nextTurnBtn').onclick=()=>{
+  state.turn++;
+  if(state.turn>5){
+    state.turn=1;
+    state.round++;
+    state.ally=Math.min(140,state.ally+8);
+  }
+
+  if(state.round>10 || state.gate<=0 || state.ally<=0){
+    alert(
+      state.gate<=0 ? '성문이 무너졌습니다. 테스트 종료.' :
+      state.ally<=0 ? '아군 전선이 붕괴했습니다. 테스트 종료.' :
+      'Stage 01 Graybox v1.1 테스트 종료.'
+    );
+    location.reload();
+    return;
+  }
+
+  seedNextTurn();
+
+  state.selectedHero={1:null,2:null};
+  state.selectedCommand={1:null,2:null};
+
+  $('resolution').classList.remove('show');
+  closeTurnConfirm();
+  render();
+};
+
+render();
+</script>
+
+</body>
+</html>
